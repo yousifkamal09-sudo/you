@@ -2,69 +2,126 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>جغرافيا الأفكار والذكريات - AR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>جغرافيا الذكريات التفاعلي</title>
     
-    <!-- تضمين مكتبة A-Frame ومكتبة AR.js الخاصة بالموقع الجغرافي -->
+    <!-- استدعاء المكتبات الأساسية للواقع المعزز والموقع الجغرافي -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-        /* واجهة مستخدم بسيطة تظهر فوق الكاميرا */
-        .ui-overlay {
+        /* تصميم صندوق واجهة الكتابة أسفل الشاشة */
+        .write-panel {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 30px;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            pointer-events: none;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 20px;
+            width: 85%;
+            max-width: 400px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
             direction: rtl;
+            font-family: sans-serif;
+        }
+        .write-panel input {
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            background: #fff;
+            color: #000;
+        }
+        .write-panel button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .write-panel button:active {
+            background: #218838;
         }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
-    <!-- واجهة المستخدم الإرشادية -->
-    <div class="ui-overlay">
-        <p style="margin: 0; font-size: 16px; font-weight: bold;">ابحث حولك لرؤية ذكريات الآخرين المعلقة في الهواء...</p>
+    <!-- واجهة إسقاط وغرس الذكريات وفوقها الكاميرا -->
+    <div class="write-panel">
+        <input type="text" id="memoryText" placeholder="اكتب خاطرة أو ذكرى لتتركها هنا...">
+        <button id="dropButton">اغرس الذكرى في هذا المكان</button>
     </div>
 
-    <!-- مشهد الواقع المعزز -->
+    <!-- مشهد الواقع المعزز وإعداد الكاميرا الخلفية الشفافة -->
     <a-scene 
         vr-mode-ui="enabled: false"
         embedded
-        arjs="sourceType: webcam; debugUIEnabled: false;">
+        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;">
         
-        <!-- الكاميرا التي تتبع الموقع الجغرافي للمستخدم وحركة الهاتف -->
+        <!-- الكاميرا مع تفعيل تتبع حركة الهاتف والاتجاهات الجغرافية -->
         <a-camera gps-camera rotation-reader></a-camera>
 
-        <!-- 
-            الفقاعة الفكرية (النص ثلاثي الأبعاد):
-            ملاحظة: يمكنك لاحقاً تغيير latitude و longitude إلى إحداثيات موقعك بدقة ليظهر النص في مكانك تماماً.
-        -->
-        <a-text
-            value="Here stood a dreamer who left a text..."
-            look-at="[gps-camera]"
-            scale="15 15 15"
-            align="center"
-            color="#FFD700"
-            gps-entity-place="latitude: 24.7136; longitude: 46.6753;">
-            
-            <!-- مجسم كروي خلف النص ليعطي إيحاء الفقاعة المعلقة -->
-            <a-sphere radius="0.5" material="color: #007bff; opacity: 0.6; transparent: true;" position="0 0 -0.1"></a-sphere>
-        </a-text>
+        <!-- حاوية ديناميكية لتوليد النصوص والفقاعات عند الضغط -->
+        <a-entity id="memoriesContainer"></a-entity>
 
     </a-scene>
 
     <script>
-        window.addEventListener('load', () => {
-            console.log("تطبيق جغرافيا الذكريات جاهز للعمل!");
+        const dropButton = document.getElementById('dropButton');
+        const memoryInput = document.getElementById('memoryText');
+        const container = document.getElementById('memoriesContainer');
+
+        dropButton.addEventListener('click', () => {
+            const textValue = memoryInput.value.trim();
+            if (!textValue) {
+                alert('الرجاء كتابة نص أولاً!');
+                return;
+            }
+
+            // طلب الإحداثيات الجغرافية الحالية من مستشعرات الهاتف
+            navigator.geolocation.getCurrentPosition((position) => {
+                const currentLat = position.coords.latitude;
+                const currentLng = position.coords.longitude;
+
+                // 1. إنشاء عنصر النص ثلاثي الأبعاد وعرضه في الفضاء الافتراضي
+                const newTextEntity = document.createElement('a-text');
+                newTextEntity.setAttribute('value', textValue);
+                newTextEntity.setAttribute('align', 'center');
+                newTextEntity.setAttribute('color', '#FFD700'); // لون ذهبي براق للخطوط والنصوص
+                newTextEntity.setAttribute('scale', '25 25 25'); // حجم مناسب ومقروء عن بعد
+                newTextEntity.setAttribute('look-at', '[gps-camera]'); // جعل النص يلتفت دائماً باتجاه عين المستخدم
+                
+                // ربط النص بالإحداثيات التي يقف عليها المستخدم حالياً بدقة
+                newTextEntity.setAttribute('gps-entity-place', `latitude: ${currentLat}; longitude: ${currentLng};`);
+
+                // 2. إنشاء فقاعة دائرية شفافة خلف النص لإعطائه عمقاً جمالياً معلقاً
+                const sphere = document.createElement('a-sphere');
+                sphere.setAttribute('radius', '0.8');
+                sphere.setAttribute('material', 'color: #007bff; opacity: 0.5; transparent: true;');
+                sphere.setAttribute('position', '0 0 -0.2');
+                
+                // دمج الفقاعة مع النص وإضافتهم إلى المشهد الفعلي
+                newTextEntity.appendChild(sphere);
+                container.appendChild(newTextEntity);
+
+                // إعادة تهيئة الحقل وتنبيه المستخدم بالنجاح
+                memoryInput.value = '';
+                alert('تم غرس فكرتك بنجاح في مكانك الحالي! التفت حولك بزاوية 360 درجة لتشاهدها معلقة في الهواء.');
+
+            }, (error) => {
+                alert('عذراً، فشل التقاط الإشارة الجغرافية. تأكد من تشغيل الـ GPS (الموقع) في هاتفك وإعطاء المتصفح صلاحية الوصول.');
+            }, {
+                enableHighAccuracy: true // إجبار الهاتف على تشغيل أعلى دقة GPS ممكنة
+            });
         });
     </script>
 </body>
