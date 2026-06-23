@@ -103,7 +103,14 @@
             background: rgba(255, 255, 255, 0.9);
             color: #111;
         }
-        .control-panel button {
+        
+        /* أزرار التحكم السفلى */
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        #dropButton {
+            flex: 2;
             background: linear-gradient(135deg, #28a745, #1e7e34);
             color: white;
             border: none;
@@ -113,6 +120,19 @@
             cursor: pointer;
             font-size: 15px;
             box-shadow: 0 4px 10px rgba(40,167,69,0.3);
+            transition: all 0.2s;
+        }
+        #copyButton {
+            flex: 1;
+            background: linear-gradient(135deg, #17a2b8, #117a8b);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(23,162,184,0.3);
             transition: all 0.2s;
         }
         .control-panel button:active {
@@ -134,7 +154,10 @@
             <input type="text" id="authorName" placeholder="اسمك المستعار (اختياري)...">
             <input type="text" id="memoryText" placeholder="اكتب فكرة أو خاطرة لتتركها في هذا الفضاء...">
         </div>
-        <button id="dropButton">📍 اغرس الأثر في هذا المكان</button>
+        <div class="button-group">
+            <button id="dropButton">📍 اغرس الأثر</button>
+            <button id="copyButton">🔗 نسخ الرابط</button>
+        </div>
     </div>
 
     <a-scene 
@@ -143,7 +166,6 @@
         arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;">
         
         <a-camera gps-camera rotation-reader></a-camera>
-
         <a-entity id="memoriesContainer"></a-entity>
 
     </a-scene>
@@ -157,10 +179,22 @@
         });
 
         const dropButton = document.getElementById('dropButton');
+        const copyButton = document.getElementById('copyButton');
         const memoryInput = document.getElementById('memoryText');
         const authorInput = document.getElementById('authorName');
         const container = document.getElementById('memoriesContainer');
 
+        // ميزة زر نسخ الرابط تلقائياً
+        copyButton.addEventListener('click', () => {
+            const currentUrl = window.location.href; // سحب رابط الموقع الحالي ديناميكياً
+            navigator.clipboard.writeText(currentUrl).then(() => {
+                alert('📋 تم نسخ رابط تطبيقك بنجاح! يمكنك الآن إرساله لأصدقائك ليشاركونك ذكرياتهم.');
+            }).catch(err => {
+                alert('فشل النسخ التلقائي، يمكنك نسخ الرابط يدوياً من أعلى المتصفح.');
+            });
+        });
+
+        // ميزة غرس الذكرى بالواقع المعزز والموقع الجغرافي
         dropButton.addEventListener('click', () => {
             const textValue = memoryInput.value.trim();
             const authorValue = authorInput.value.trim() || 'عابر سبيل';
@@ -170,36 +204,29 @@
                 return;
             }
 
-            // سحب الإحداثيات الدقيقة من مستشعرات الهاتف
             navigator.geolocation.getCurrentPosition((position) => {
                 const currentLat = position.coords.latitude;
                 const currentLng = position.coords.longitude;
 
-                // تنسيق النص النهائي المدمج (الخاطرة متبوعة باسم الكاتب)
                 const fullDisplayTrack = `"${textValue}" \n [ ${authorValue} ]`;
 
-                // 1. إنشاء الكيان النصي ثلاثي الأبعاد وعرضه في الفضاء
                 const newTextEntity = document.createElement('a-text');
                 newTextEntity.setAttribute('value', fullDisplayTrack);
                 newTextEntity.setAttribute('align', 'center');
-                newTextEntity.setAttribute('color', '#FFD700'); // لون ذهبي متوهج لسهولة القراءة
-                newTextEntity.setAttribute('scale', '30 30 30'); // حجم معزز ليكون ظاهراً بوضوح في الغرفة أو الشارع
-                newTextEntity.setAttribute('look-at', '[gps-camera]'); // جعل النص يواجه الهاتف تلقائياً عند الالتفات
+                newTextEntity.setAttribute('color', '#FFD700'); 
+                newTextEntity.setAttribute('scale', '30 30 30'); 
+                newTextEntity.setAttribute('look-at', '[gps-camera]'); 
                 
-                // زرع العنصر البرمجي في الإحداثيات الحالية تماماً
                 newTextEntity.setAttribute('gps-entity-place', `latitude: ${currentLat}; longitude: ${currentLng};`);
 
-                // 2. إنشاء مجسم كروي (الفقاعة) خلف النص لتعطيه عمقاً في الفضاء الافتراضي
                 const sphere = document.createElement('a-sphere');
                 sphere.setAttribute('radius', '1.2');
-                sphere.setAttribute('material', 'color: #0d6efd; opacity: 0.4; transparent: true; roughness: 0.2; wireframe: false;');
+                sphere.setAttribute('material', 'color: #0d6efd; opacity: 0.4; transparent: true; roughness: 0.2;');
                 sphere.setAttribute('position', '0 0 -0.3');
                 
-                // دمج المجسمات مع الحاوية الرئيسية
                 newTextEntity.appendChild(sphere);
                 container.appendChild(newTextEntity);
 
-                // مسح حقول الإدخال لتجهيزها لكتابة فكرة جديدة
                 memoryInput.value = '';
                 authorInput.value = '';
                 
@@ -208,7 +235,7 @@
             }, (error) => {
                 alert('⚠️ تعذر قراءة مستشعر الموقع الجغرافي. تأكد من تفعيل الـ GPS في هاتفك وإعطاء المتصفح كامل الصلاحيات.');
             }, {
-                enableHighAccuracy: true // الحصول على دقة عالية لـ GPS
+                enableHighAccuracy: true
             });
         });
     </script>
