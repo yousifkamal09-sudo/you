@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>جغرافيا الأفكار والذكريات المفقودة</title>
+    <title>جغرافيا الأفكار والذكريات - نسخة تجريبية</title>
     
+    <!-- استدعاء نسخ مستقرة من مكتبات A-Frame و AR.js -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-        /* الخطوط والتنسيق العام */
         body, html {
             margin: 0;
             padding: 0;
@@ -20,7 +20,7 @@
             user-select: none;
         }
 
-        /* 1. شاشة الترحيب والتهيئة */
+        /* شاشة الترحيب */
         #splashScreen {
             position: fixed;
             top: 0;
@@ -40,16 +40,9 @@
             transition: opacity 0.8s ease;
         }
         #splashScreen h1 {
-            font-size: 28px;
+            font-size: 26px;
             color: #ffdf00;
             margin-bottom: 10px;
-        }
-        #splashScreen p {
-            font-size: 16px;
-            max-width: 400px;
-            line-height: 1.6;
-            color: #e2e2e2;
-            direction: rtl;
         }
         #startButton {
             background: linear-gradient(135deg, #007bff, #0056b3);
@@ -62,13 +55,9 @@
             cursor: pointer;
             margin-top: 25px;
             box-shadow: 0 4px 15px rgba(0,123,255,0.4);
-            transition: transform 0.2s;
-        }
-        #startButton:active {
-            transform: scale(0.95);
         }
 
-        /* 2. لوحة التحكم السفلية لإسقاط الذكريات */
+        /* لوحة التحكم السفلية */
         .control-panel {
             position: fixed;
             bottom: 25px;
@@ -103,8 +92,6 @@
             background: rgba(255, 255, 255, 0.9);
             color: #111;
         }
-        
-        /* أزرار التحكم السفلى */
         .button-group {
             display: flex;
             gap: 10px;
@@ -119,8 +106,6 @@
             font-weight: bold;
             cursor: pointer;
             font-size: 15px;
-            box-shadow: 0 4px 10px rgba(40,167,69,0.3);
-            transition: all 0.2s;
         }
         #copyButton {
             flex: 1;
@@ -132,30 +117,25 @@
             font-weight: bold;
             cursor: pointer;
             font-size: 14px;
-            box-shadow: 0 4px 10px rgba(23,162,184,0.3);
-            transition: all 0.2s;
-        }
-        .control-panel button:active {
-            transform: scale(0.98);
         }
     </style>
 </head>
 <body>
 
     <div id="splashScreen">
-        <div style="font-size: 60px; margin-bottom: 15px;">📍</div>
-        <h1>جغرافيا الأفكار والذكريات</h1>
-        <p>مرحباً بك في الفضاء التفاعلي المعزز. يرجى التأكد من تشغيل الموقع الجغرافي (GPS) لتتمكن من زرع كلماتك ورؤية ما تركه الآخرون معلقاً في الهواء حولك.</p>
-        <button id="startButton">ابدأ التجربة الآن</button>
+        <div style="font-size: 50px; margin-bottom: 15px;">🚀</div>
+        <h1>النسخة التجريبية للمحاكاة الداخلية</h1>
+        <p>تم تفعيل وتأمين ميزة نسخ الرابط لتضمن مشاركته بسهولة. اكتب خاطرتك وعاينها فوراً داخل غرفتك.</p>
+        <button id="startButton">ابدأ المعاينة الفورية</button>
     </div>
 
     <div class="control-panel">
         <div class="input-group">
             <input type="text" id="authorName" placeholder="اسمك المستعار (اختياري)...">
-            <input type="text" id="memoryText" placeholder="اكتب فكرة أو خاطرة لتتركها في هذا الفضاء...">
+            <input type="text" id="memoryText" placeholder="اكتب فكرة لتراها معلقة أمامك الآن...">
         </div>
         <div class="button-group">
-            <button id="dropButton">📍 اغرس الأثر</button>
+            <button id="dropButton">✨ غرس ومعاينة فورية</button>
             <button id="copyButton">🔗 نسخ الرابط</button>
         </div>
     </div>
@@ -165,13 +145,12 @@
         embedded
         arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;">
         
-        <a-camera gps-camera rotation-reader></a-camera>
+        <a-camera rotation-reader></a-camera>
         <a-entity id="memoriesContainer"></a-entity>
 
     </a-scene>
 
     <script>
-        // إخفاء شاشة الترحيب عند الضغط على زر البداية وتفعيل الكاميرا
         document.getElementById('startButton').addEventListener('click', () => {
             const splash = document.getElementById('splashScreen');
             splash.style.opacity = '0';
@@ -184,59 +163,70 @@
         const authorInput = document.getElementById('authorName');
         const container = document.getElementById('memoriesContainer');
 
-        // ميزة زر نسخ الرابط تلقائياً
+        // البرمجة المحدثة والمؤمنة لزر نسخ الرابط بنجاح
         copyButton.addEventListener('click', () => {
-            const currentUrl = window.location.href; // سحب رابط الموقع الحالي ديناميكياً
-            navigator.clipboard.writeText(currentUrl).then(() => {
-                alert('📋 تم نسخ رابط تطبيقك بنجاح! يمكنك الآن إرساله لأصدقائك ليشاركونك ذكرياتهم.');
-            }).catch(err => {
-                alert('فشل النسخ التلقائي، يمكنك نسخ الرابط يدوياً من أعلى المتصفح.');
-            });
+            const currentUrl = window.location.href;
+
+            // الطريقة الأولى الحديثة
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(currentUrl).then(() => {
+                    alert('📋 تم نسخ الرابط بنجاح لمشاركته!');
+                }).catch(() => {
+                    fallbackCopy(currentUrl); // الانتقال للخطة البديلة في حال الرفض
+                });
+            } else {
+                fallbackCopy(currentUrl); // الخطة البديلة للهواتف الأقدم
+            }
         });
 
-        // ميزة غرس الذكرى بالواقع المعزز والموقع الجغرافي
+        // دالة النسخ الاحتياطية المضمونة
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";  // تجنب التمرير
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                alert('📋 تم نسخ الرابط بنجاح!');
+            } catch (err) {
+                alert('عذراً، قم بنسخ الرابط يدوياً من أعلى المتصفح.');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // غرس الخاطرة وعرضها فوراً أمام المستخدم
         dropButton.addEventListener('click', () => {
             const textValue = memoryInput.value.trim();
             const authorValue = authorInput.value.trim() || 'عابر سبيل';
 
             if (!textValue) {
-                alert('الرجاء كتابة الفكرة أو الخاطرة أولاً!');
+                alert('الرجاء كتابة نص أولاً!');
                 return;
             }
 
-            navigator.geolocation.getCurrentPosition((position) => {
-                const currentLat = position.coords.latitude;
-                const currentLng = position.coords.longitude;
+            const fullDisplayTrack = `"${textValue}" \n [ ${authorValue} ]`;
 
-                const fullDisplayTrack = `"${textValue}" \n [ ${authorValue} ]`;
+            const newTextEntity = document.createElement('a-text');
+            newTextEntity.setAttribute('value', fullDisplayTrack);
+            newTextEntity.setAttribute('align', 'center');
+            newTextEntity.setAttribute('color', '#FFD700'); 
+            newTextEntity.setAttribute('scale', '4 4 4'); 
+            newTextEntity.setAttribute('position', '0 1.5 -4'); // تظهر على بعد 4 أمتار أمام الكاميرا
 
-                const newTextEntity = document.createElement('a-text');
-                newTextEntity.setAttribute('value', fullDisplayTrack);
-                newTextEntity.setAttribute('align', 'center');
-                newTextEntity.setAttribute('color', '#FFD700'); 
-                newTextEntity.setAttribute('scale', '30 30 30'); 
-                newTextEntity.setAttribute('look-at', '[gps-camera]'); 
-                
-                newTextEntity.setAttribute('gps-entity-place', `latitude: ${currentLat}; longitude: ${currentLng};`);
+            const sphere = document.createElement('a-sphere');
+            sphere.setAttribute('radius', '1.5');
+            sphere.setAttribute('material', 'color: #0d6efd; opacity: 0.35; transparent: true;');
+            sphere.setAttribute('position', '0 0 -0.1');
+            
+            newTextEntity.appendChild(sphere);
+            container.appendChild(newTextEntity);
 
-                const sphere = document.createElement('a-sphere');
-                sphere.setAttribute('radius', '1.2');
-                sphere.setAttribute('material', 'color: #0d6efd; opacity: 0.4; transparent: true; roughness: 0.2;');
-                sphere.setAttribute('position', '0 0 -0.3');
-                
-                newTextEntity.appendChild(sphere);
-                container.appendChild(newTextEntity);
-
-                memoryInput.value = '';
-                authorInput.value = '';
-                
-                alert('🚀 مبروك! تم غرس ذكراك بنجاح في فضاء هذا الموقع. التفت حولك بزاوية 360 درجة لتبصرها معلقة في الهواء.');
-
-            }, (error) => {
-                alert('⚠️ تعذر قراءة مستشعر الموقع الجغرافي. تأكد من تفعيل الـ GPS في هاتفك وإعطاء المتصفح كامل الصلاحيات.');
-            }, {
-                enableHighAccuracy: true
-            });
+            memoryInput.value = '';
+            authorInput.value = '';
+            
+            alert('🎉 رائع! تم إسقاط النص بنجاح. انظر للأمام مباشرة في شاشة هاتفك وستبصر فكرتك تطفو في الغرفة!');
         });
     </script>
 </body>
