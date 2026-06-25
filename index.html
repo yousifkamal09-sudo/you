@@ -4,20 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <title>منصة جغرافيا الخواطر</title>
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.2.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
         
         body, html {
             margin: 0;
+            padding: 0;
             overflow: hidden;
             font-family: 'Cairo', sans-serif;
             background-color: #120c08;
+            width: 100%;
+            height: 100%;
         }
 
-        /* شاشة إدخال البيانات والأسئلة */
+        /* شاشة إدخال البيانات والأسئلة - تظهر في البداية إجبارياً */
         #setup-screen {
             position: fixed;
             top: 0;
@@ -25,7 +29,7 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(135deg, #23160e 0%, #0b0704 100%);
-            z-index: 9999;
+            z-index: 99999;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -33,18 +37,17 @@
             color: #f5ebe0;
             padding: 15px;
             box-sizing: border-box;
-            overflow-y: auto;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(212, 163, 115, 0.2);
+            background: rgba(35, 23, 14, 0.95);
+            border: 1px solid rgba(212, 163, 115, 0.3);
             padding: 25px;
             border-radius: 16px;
             text-align: center;
             max-width: 420px;
             width: 100%;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
             box-sizing: border-box;
         }
 
@@ -62,4 +65,203 @@
         }
 
         .input-group {
-            margin-bottom: 15
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: #d4a373;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid rgba(212, 163, 115, 0.4);
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            border-radius: 8px;
+            font-family: 'Cairo', sans-serif;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: none;
+            height: 80px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #e63946;
+        }
+
+        button.main-btn {
+            background: linear-gradient(90deg, #d4a373, #b58353);
+            color: #120c08;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button.main-btn:hover {
+            background: #e63946;
+            color: #fff;
+        }
+
+        /* زر إعادة الكتابة العائم */
+        #reset-btn {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: rgba(35, 23, 14, 0.95);
+            color: #d4a373;
+            border: 1px solid #d4a373;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        }
+    </style>
+</head>
+<body>
+
+    <button id="reset-btn" onclick="showSetupScreen()">✍️ كتابة خاطرة جديدة</button>
+
+    <div id="setup-screen">
+        <div class="card">
+            <h1>جغرافيا الخواطر</h1>
+            <div class="subtitle">منصة دمج النصوص الأدبية بالواقع الجغرافي المعزز</div>
+            
+            <div class="input-group">
+                <label>ما اسمك؟</label>
+                <input type="text" id="visitor-name" placeholder="أدخل اسمك الكريم...">
+            </div>
+
+            <div class="input-group">
+                <label>كم عمرك؟</label>
+                <input type="number" id="visitor-age" placeholder="أدخل عمرك...">
+            </div>
+
+            <div class="input-group">
+                <label>هل تعرف يوسف كمال السراج؟</label>
+                <select id="know-youssef">
+                    <option value="" disabled selected>اختر إجابة...</option>
+                    <option value="yes">نعم، أعرفه جيداً</option>
+                    <option value="maybe">سمعت عنه أو قرأت له</option>
+                    <option value="no">لا، لم أتشرف بعد</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>اكتب خاطرتك المكانية هنا:</label>
+                <textarea id="visitor-thought" placeholder="ماذا يخبرك هذا المكان؟ اكتب بوحك هنا..."></textarea>
+            </div>
+
+            <button class="main-btn" onclick="generateAR()">✨ دمج الخاطرة في الفضاء</button>
+        </div>
+    </div>
+
+    <a-scene embedded arjs="sourceType: webcam; videoSettings: {facingMode: 'environment'}; debugUIEnabled: false;" vr-mode-ui="enabled: false;">
+        
+        <a-marker preset="hiro" id="ar-marker">
+            <a-entity position="0 0 0" rotation="-90 0 0">
+                <a-plane color="#1e120b" opacity="0.95" width="4" height="2.6" radius="0.15" shader="flat"></a-plane>
+
+                <a-text 
+                    id="ar-text-content"
+                    value="" 
+                    font="https://cdn.aframe.io/fonts/A-Bold.fnt" 
+                    align="center" 
+                    position="0 0.4 0.02" 
+                    width="3.5" 
+                    color="#f5ebe0"
+                    wrap-count="25">
+                </a-text>
+
+                <a-plane color="#d4a373" width="3.2" height="0.015" position="0 -0.4 0.03"></a-plane>
+
+                <a-text 
+                    id="ar-author-name"
+                    value="" 
+                    font="https://cdn.aframe.io/fonts/A-Bold.fnt" 
+                    align="center" 
+                    position="0 -0.7 0.02" 
+                    width="2.5" 
+                    color="#e63946">
+                </a-text>
+            </a-entity>
+        </a-marker>
+
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+        // دالة منسق النصوص البرمجية لتقسيم السطور تلقائياً
+        function wrapText(text, maxChars) {
+            let words = text.split(' ');
+            let lines = [];
+            let currentLine = '';
+
+            words.forEach(word => {
+                if ((currentLine + word).length > maxChars) {
+                    lines.push(currentLine.trim());
+                    currentLine = word + ' ';
+                } else {
+                    currentLine += word + ' ';
+                }
+            });
+            lines.push(currentLine.trim());
+            return lines.join('\n');
+        }
+
+        function generateAR() {
+            const name = document.getElementById('visitor-name').value;
+            const age = document.getElementById('visitor-age').value;
+            const know = document.getElementById('know-youssef').value;
+            const thought = document.getElementById('visitor-thought').value;
+
+            if(!name || !age || !know || !thought) {
+                alert("لطفاً، املأ جميع الخانات وأجب على الأسئلة لنتمكن من صياغة لوحتك الأدبية.");
+                return;
+            }
+
+            const formattedThought = wrapText(thought, 24);
+
+            document.getElementById('ar-text-content').setAttribute('value', formattedThought);
+            document.getElementById('ar-author-name').setAttribute('value', 'بقلم: ' + name);
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('reset-btn').style.display = 'block';
+            
+            // محاولة تشغيل الكاميرا من المتصفح يدوياً فور الضغط على الزر لضمان فتحها
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).catch(function(err) {
+                    console.log("إذن الكاميرا مطلوب");
+                });
+            }
+        }
+
+        function showSetupScreen() {
+            document.getElementById('setup-screen').style.display = 'flex';
+            document.getElementById('reset-btn').style.display = 'none';
+        }
+    </script>
+
+</body>
+</html>
