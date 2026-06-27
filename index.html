@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <title>منصة جغرافيا الخواطر - البث المباشر</title>
     
-    <!-- مكتبة الخرائط Leaflet وتنسيقاتها -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -33,7 +32,7 @@
             z-index: 1;
         }
 
-        /* اللوحة ثلاثية الأبعاد العائمة - تظهر عند الاقتراب لمسافة 10 أمتار أو أقل */
+        /* اللوحة العائمة - تظهر عند الاقتراب لمسافة 10 أمتار أو أقل */
         #ar-overlay-card {
             position: fixed;
             top: 30%;
@@ -197,26 +196,21 @@
 </head>
 <body>
 
-    <!-- فيديو الكاميرا الحقيقي المباشر -->
     <video id="webcam-video" autoplay playsinline muted></video>
 
-    <!-- رادار تتبع المسافة المتبقية في الأعلى -->
     <div id="distance-radar">البحث عن الحيز الجغرافي للذكريات...</div>
 
-    <!-- لوحة عرض الخاطرة الأدبية (تظهر فقط عند مسافة <= 10 متر) -->
     <div id="ar-overlay-card">
         <p id="ar-text-view"></p>
         <div style="width: 80%; height: 1px; background: #d4a373; margin: 10px auto;"></div>
         <div id="ar-author-view" class="author"></div>
     </div>
 
-    <!-- الأزرار العائمة الثنائية فوق الكاميرا -->
     <div class="controls-container">
         <button class="action-btn" onclick="openPlantPanel('current')">📍 الغرز في موقعي الحالي</button>
         <button class="action-btn" onclick="openPlantPanel('remote')">🗺️ الغرز عن بُعد / بالإحداثيات</button>
     </div>
 
-    <!-- نافذة الأسئلة والخريطة المدمجة -->
     <div id="plant-panel" class="panel">
         <div class="panel-header">
             <h2 id="panel-main-title">غرز ذاكرة مكانية</h2>
@@ -248,13 +242,11 @@
             <textarea id="v-thought" placeholder="ماذا تترك في هذا الحيز من ذاكرة?..."></textarea>
         </div>
 
-        <!-- خانة إدخال ولصق الإحداثيات يدويًا -->
         <div class="input-group" id="manual-coords-group">
             <label>أو الصق إحداثيات الموقع هنا مباشرة (خط الطول والعرض):</label>
             <input type="text" id="manual-coords-input" oninput="parseManualCoords()" placeholder="مثال: 15.6000, 32.5333">
         </div>
 
-        <!-- حاوية الخريطة -->
         <div class="input-group" id="map-container-group">
             <label>أو كبّر الخريطة واضغط على المبنى/المحل المسمّى بدقة:</label>
             <div id="map"></div>
@@ -286,7 +278,6 @@
             }
         }
 
-        // فحص التحميل المستمر للذاكرة المخزنة أو الرابط المفتوح
         window.addEventListener('DOMContentLoaded', function() {
             startWebcam();
             checkUrlOrStorageMemory();
@@ -399,6 +390,7 @@
                 
                 radar.innerText = `البُعد عن الذاكرة: ${distance.toFixed(1)} متر`;
 
+                // شرط الـ 10 أمتار كأبعد نقطة ظهور
                 if (distance <= 10.0) {
                     card.style.display = 'block';
                     card.style.opacity = '1';
@@ -414,7 +406,6 @@
             }, { enableHighAccuracy: true });
         }
 
-        // دالة فحص إذا كان الزائر يفتح رابطاً قادماً بإحداثيات أو يملك ذاكرة قديمة محفوظة
         function checkUrlOrStorageMemory() {
             const urlParams = new URLSearchParams(window.location.search);
             const urlLat = urlParams.get('lat');
@@ -423,14 +414,12 @@
             const urlName = urlParams.get('author');
 
             if (urlLat && urlLng && urlThought) {
-                // إعداد الخاطرة مباشرة من تفاصيل الرابط للزائر الجديد
                 document.getElementById('ar-text-view').innerText = decodeURIComponent(urlThought);
                 document.getElementById('ar-author-view').innerText = 'بقلم: ' + decodeURIComponent(urlName || 'مجهول');
                 trackDistanceToMemory(parseFloat(urlLat), parseFloat(urlLng));
                 return;
             }
 
-            // فحص التخزين المحلي في حال العودة للموقع بدون رابط معطى
             const savedMemory = localStorage.getItem('geo_thought_memory');
             if (savedMemory) {
                 const data = JSON.parse(savedMemory);
@@ -451,7 +440,6 @@
                 return;
             }
 
-            // 1. الحفظ الأبدي الفوري في المتصفح الحالي
             const memoryData = {
                 name: name,
                 thought: thought,
@@ -465,12 +453,10 @@
 
             trackDistanceToMemory(selectedCoords.lat, selectedCoords.lng);
 
-            // 2. توليد رابط المشاركة المباشر المخصص للآخرين
             const shareUrl = `${window.location.origin}${window.location.pathname}?lat=${selectedCoords.lat}&lng=${selectedCoords.lng}&thought=${encodeURIComponent(thought)}&author=${encodeURIComponent(name)}`;
 
-            // نسخ الرابط تلقائياً ليسهل إرساله
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("تم الغرز بنجاح وحفظه أبدياً!\n\nتم نسخ رابط المشاركة الخاص بهذه النقطة إلى حافظتك تلقائياً. أرسله لأصدقائك ليشاهدوا خاطرتك عند اقترابهم من المكان!");
+                alert("تم الغرز بنجاح وحفظه أبدياً!\n\nتم نسخ رابط المشاركة الخاص بهذه النقطة إلى حافظتك تلقائياً. أرسله لأصدقائك ليشاهدوا خاطرتك عند اقترابهم لمسافة 10 أمتار أو أقل!");
             }).catch(() => {
                 alert(`تم الغرز والحفظ أبدياً!\n\nرابط مشاركة النقطة للآخرين هو:\n${shareUrl}`);
             });
