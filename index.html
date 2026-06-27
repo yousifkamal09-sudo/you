@@ -21,7 +21,7 @@
             background-color: #000;
         }
 
-        /* الكاميرا الخلفية الحية - تعمل كخلفية أساسية للموقع */
+        /* الكاميرا الخلفية الحية */
         #webcam-video {
             position: fixed;
             top: 0;
@@ -32,12 +32,12 @@
             z-index: 1;
         }
 
-        /* اللوحة ثلاثية الأبعاد العائمة التي تعرض الخاطرة فوق الكاميرا */
+        /* اللوحة ثلاثية الأبعاد العائمة التي تتأثر بالمسافة (تكبر وتصغر) */
         #ar-overlay-card {
             position: fixed;
             top: 30%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) scale(1);
             z-index: 5;
             background: rgba(30, 18, 11, 0.95);
             border: 2px solid #d4a373;
@@ -49,6 +49,7 @@
             box-shadow: 0 15px 30px rgba(0,0,0,0.7);
             display: none;
             color: #f5ebe0;
+            transition: transform 0.5s ease-out; /* حركة ناعمة أثناء التكبير والتصغير */
         }
 
         #ar-overlay-card p {
@@ -64,33 +65,43 @@
             font-size: 14px;
         }
 
-        /* زر الغرز العائم أسفل الشاشة */
+        /* عرض المسافة الحالية أسفل لوحة البوح */
+        .distance-tag {
+            font-size: 11px;
+            color: #b7a89a;
+            margin-top: 8px;
+        }
+
+        /* الأزرار العائمة أسفل الشاشة */
         .controls-container {
             position: fixed;
             bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
-            width: 90%;
-            max-width: 400px;
+            width: 92%;
+            max-width: 440px;
+            display: flex;
+            gap: 10px;
         }
 
         .action-btn {
-            width: 100%;
+            flex: 1;
             background: linear-gradient(135deg, #2c1d11 0%, #110a05 100%);
             color: #d4a373;
             border: 1px solid rgba(212, 163, 115, 0.6);
-            padding: 16px;
-            font-size: 15px;
+            padding: 14px 8px;
+            font-size: 13px;
             font-weight: bold;
             border-radius: 30px;
             cursor: pointer;
             font-family: 'Cairo', sans-serif;
             box-shadow: 0 10px 25px rgba(0,0,0,0.6);
             backdrop-filter: blur(5px);
+            white-space: nowrap;
         }
 
-        /* نافذة الغرز عن بعد والخريطة */
+        /* نافذة الغرز والأسئلة */
         .panel {
             position: fixed;
             top: 0;
@@ -141,7 +152,7 @@
 
         #map {
             width: 100%;
-            height: 250px;
+            height: 220px;
             border-radius: 8px;
             border: 1px solid #d4a373;
             margin-top: 5px;
@@ -181,16 +192,18 @@
         <p id="ar-text-view"></p>
         <div style="width: 80%; height: 1px; background: #d4a373; margin: 10px auto;"></div>
         <div id="ar-author-view" class="author"></div>
+        <div id="ar-distance-view" class="distance-tag">المسافة: جاري الحساب...</div>
     </div>
 
     <div class="controls-container">
-        <button class="action-btn" onclick="openPlantPanel()">📍 خيار الغرز عن بُعد</button>
+        <button class="action-btn" onclick="openPlantPanel('current')">📍 الغرز في موقعي الحالي</button>
+        <button class="action-btn" onclick="openPlantPanel('remote')">🗺️ الغرز عن بُعد / بالإحداثيات</button>
     </div>
 
     <div id="plant-panel" class="panel">
         <div class="panel-header">
-            <h2>الغرز عن بُعد (خرائط القمر الصناعي)</h2>
-            <div style="font-size: 12px; color: #b7a89a; text-align: center; margin-bottom: 15px;">حدد المبنى بدقة واغرز خاطرتك</div>
+            <h2 id="panel-main-title">غرز ذاكرة مكانية</h2>
+            <div style="font-size: 12px; color: #b7a89a; text-align: center; margin-bottom: 15px;">اكتب بوحك الأدبي ليرتبط بالحيز الجغرافي</div>
         </div>
 
         <div class="input-group">
@@ -218,13 +231,18 @@
             <textarea id="v-thought" placeholder="ماذا تترك في هذا الحيز من ذاكرة؟..."></textarea>
         </div>
 
-        <div class="input-group">
-            <label>كبّر الخريطة واضغط على المبنى بدقة عالية للغرز:</label>
+        <div class="input-group" id="manual-coords-group">
+            <label>أو الصق إحداثيات الموقع هنا مباشرة (خط الطول والعرض):</label>
+            <input type="text" id="manual-coords-input" oninput="parseManualCoords()" placeholder="مثال: 15.6000, 32.5333">
+        </div>
+
+        <div class="input-group" id="map-container-group">
+            <label>أو كبّر الخريطة واضغط على المبنى/المحل المسمّى بدقة:</label>
             <div id="map"></div>
             <div id="coords-display" style="font-size: 11px; color: #d4a373; margin-top: 6px; text-align: right;">الموقع: اضغط لتحديد مكان المبنى المطلوب</div>
         </div>
 
-        <button class="submit-btn" onclick="plantMemory()">✨ إتمام الغرز الجغرافي للمبنى</button>
+        <button class="submit-btn" onclick="plantMemory()">✨ إتمام الغرز الجغرافي</button>
         <button class="close-panel" onclick="closePlantPanel()">إلغاء والعودة للكاميرا</button>
     </div>
 
@@ -232,68 +250,147 @@
         let map;
         let selectedMarker = null;
         let selectedCoords = null;
+        let currentMode = 'remote';
+        let watchId = null; // لمراقبة حركة المستخدم وتحديث الحجم حياً
 
-        // دالة تشغيل الكاميرا الخلفية الأصلية والمستقرة 100% فور فتح الموقع
         function startWebcam() {
             const video = document.getElementById('webcam-video');
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: { exact: "environment" } } // إجبار الكاميرا الخلفية
+                    video: { facingMode: { exact: "environment" } }
                 })
-                .then(function(stream) {
-                    video.srcObject = stream;
-                })
+                .then(function(stream) { video.srcObject = stream; })
                 .catch(function(error) {
-                    // حل احتياطي في حال فشل الإجبار الصارم (مثل العمل على الكمبيوتر للتجربة)
                     navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function(stream) {
-                        video.srcObject = stream;
-                    });
+                    .then(function(stream) { video.srcObject = stream; });
                 });
             }
         }
 
-        // تشغيل الكاميرا تلقائياً فور تحميل الصفحة
         window.addEventListener('DOMContentLoaded', startWebcam);
 
-        // تهيئة خريطة الأقمار الصناعية عالية الدقة لعرض المباني والبيوت بالتكبير
         function initMap() {
             if (map) return; 
-            
-            // تهيئة الخريطة على إحداثيات متوسطة تقريبية
-            map = L.map('map').setView([15.6000, 32.5333], 16); 
+            map = L.map('map').setView([15.6000, 32.5333], 15); 
 
-            // سيرفر خرائط Esri بالأقمار الصناعية لعرض تفاصيل المباني الحقيقية بدقة متناهية
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 19,
-                attribution: 'Esri World Imagery'
+                maxZoom: 19
+            }).addTo(map);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19
             }).addTo(map);
 
             map.on('click', function(e) {
-                let lat = e.latlng.lat;
-                let lng = e.latlng.lng;
-                selectedCoords = { lat: lat, lng: lng };
-
-                if (selectedMarker) {
-                    selectedMarker.setLatLng(e.latlng);
-                } else {
-                    selectedMarker = L.marker(e.latlng).addTo(map);
-                }
-
-                document.getElementById('coords-display').innerText = `تم تحديد موقع المبنى بدقة بنجاح.`;
+                updateSelectedLocation(e.latlng.lat, e.latlng.lng, true);
             });
         }
 
-        function openPlantPanel() {
+        function updateSelectedLocation(lat, lng, updateMapCenter = false) {
+            selectedCoords = { lat: lat, lng: lng };
+            const latlng = L.latLng(lat, lng);
+
+            if (selectedMarker) {
+                selectedMarker.setLatLng(latlng);
+            } else {
+                selectedMarker = L.marker(latlng).addTo(map);
+            }
+
+            if (updateMapCenter) {
+                map.setView(latlng, map.getZoom());
+            }
+
+            document.getElementById('coords-display').innerText = `تم تحديد الموقع: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        }
+
+        function parseManualCoords() {
+            const val = document.getElementById('manual-coords-input').value;
+            const parts = val.split(',');
+            if (parts.length === 2) {
+                const lat = parseFloat(parts[0].trim());
+                const lng = parseFloat(parts[1].trim());
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    updateSelectedLocation(lat, lng, true);
+                }
+            }
+        }
+
+        function openPlantPanel(mode) {
+            currentMode = mode;
             document.getElementById('plant-panel').style.display = 'flex';
-            setTimeout(function() {
-                initMap();
-                map.invalidateSize();
-            }, 250);
+            
+            if (mode === 'current') {
+                document.getElementById('panel-main-title').innerText = "غرز في موقعي الحالي";
+                document.getElementById('map-container-group').style.display = 'none';
+                document.getElementById('manual-coords-group').style.display = 'none';
+                
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        selectedCoords = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                    }, function(err) {
+                        alert("فشل جلب الموقع الحالي، تأكد من تفعيل الـ GPS.");
+                    });
+                }
+            } else {
+                document.getElementById('panel-main-title').innerText = "الغرز عن بُعد وبأسماء المواقع";
+                document.getElementById('map-container-group').style.display = 'block';
+                document.getElementById('manual-coords-group').style.display = 'block';
+                setTimeout(function() {
+                    initMap();
+                    map.invalidateSize();
+                }, 250);
+            }
         }
 
         function closePlantPanel() {
             document.getElementById('plant-panel').style.display = 'none';
+            document.getElementById('manual-coords-input').value = "";
+        }
+
+        // دالة حساب المسافة الدقيقة بين نقطتين جغرافيين (معادلة هافرسين الجغرافية)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // نصف قطر الأرض بالمتر
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // المسافة بالمتر
+        }
+
+        // دالة مراقبة المسافة وتعديل حجم اللوحة ديناميكياً
+        function trackDistanceToMemory(targetLat, targetLng) {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+
+            watchId = navigator.geolocation.watchPosition(function(position) {
+                const currentLat = position.coords.latitude;
+                const currentLng = position.coords.longitude;
+
+                // حساب المسافة الحالية بالمتر
+                const distance = calculateDistance(currentLat, currentLng, targetLat, targetLng);
+                document.getElementById('ar-distance-view').innerText = `المسافة الحالية: ${distance.toFixed(1)} متر`;
+
+                // تطبيق لوغاريتم التكبير والتصغير ديناميكياً بناءً على القرب والبعد
+                // النطاق المؤثر: من 0 متر إلى 100 متر
+                let scaleFactor = 1;
+                if (distance > 100) {
+                    scaleFactor = 0.2; // تصبح صغيرة جداً إذا كان بعيداً جداً
+                } else {
+                    // كلما قلّت المسافة من 100 إلى 0، يكبر حجم الحجم من 0.2 إلى 1.3
+                    scaleFactor = 1.3 - (distance / 100);
+                    if (scaleFactor < 0.2) scaleFactor = 0.2;
+                }
+
+                // تطبيق التعديل على الكارت الحجمي فورا
+                document.getElementById('ar-overlay-card').style.transform = `translate(-50%, -50%) scale(${scaleFactor})`;
+
+            }, function(err) {
+                console.log("خطأ في تتبع المسافة الحية.");
+            }, { enableHighAccuracy: true });
         }
 
         function plantMemory() {
@@ -303,17 +400,18 @@
             const thought = document.getElementById('v-thought').value;
 
             if (!name || !age || !know || !thought || !selectedCoords) {
-                alert("لطفاً، أكمل جميع الإجابات وحدد المبنى بدقة بالضغط على الخريطة أولاً.");
+                alert("لطفاً، أكمل البيانات وحدد الموقع الجغرافي لإتمام الغرز.");
                 return;
             }
 
-            // عرض لوحة الخاطرة الأدبية بشكل فخم فوق الكاميرا الخلفية مباشرة مع اسم الكاتب
             document.getElementById('ar-text-view').innerText = thought;
             document.getElementById('ar-author-view').innerText = 'بقلم: ' + name;
-            
             document.getElementById('ar-overlay-card').style.display = 'block';
 
-            alert("تم الغرز عن بُعد بنجاح للمبنى المختار ومزامنة الخاطرة في الفضاء الجغرافي!");
+            // البدء في تتبع حركة الهاتف وتعديل حجم لوحة البوح حياً بناءً على الإحداثيات المغروزة
+            trackDistanceToMemory(selectedCoords.lat, selectedCoords.lng);
+
+            alert("تم الغرز بنجاح! اللوحة ستكبر وتصغر الآن ديناميكياً حسب اقترابك أو ابتعادك عن النقطة جغرافياً.");
             closePlantPanel();
         }
     </script>
