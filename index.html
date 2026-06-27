@@ -32,7 +32,7 @@
             z-index: 1;
         }
 
-        /* اللوحة ثلاثية الأبعاد العائمة التي تتأثر بالمسافة (تكبر وتصغر) */
+        /* اللوحة ثلاثية الأبعاد العائمة - مخفية تماماً ولا تظهر إلا عند الاقتراب لمسافة 1 متر */
         #ar-overlay-card {
             position: fixed;
             top: 30%;
@@ -47,9 +47,9 @@
             max-width: 360px;
             text-align: center;
             box-shadow: 0 15px 30px rgba(0,0,0,0.7);
-            display: none;
+            display: none; /* مخفية افتراضياً */
             color: #f5ebe0;
-            transition: transform 0.5s ease-out; /* حركة ناعمة أثناء التكبير والتصغير */
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
         }
 
         #ar-overlay-card p {
@@ -65,11 +65,21 @@
             font-size: 14px;
         }
 
-        /* عرض المسافة الحالية أسفل لوحة البوح */
-        .distance-tag {
-            font-size: 11px;
-            color: #b7a89a;
-            margin-top: 8px;
+        /* مؤشر تتبع المسافة الحية أسفل الكاميرا لمعرفة كم بقي للوصول للغرز */
+        #distance-radar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            color: #d4a373;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            border: 1px solid rgba(212, 163, 115, 0.4);
+            display: none;
         }
 
         /* الأزرار العائمة أسفل الشاشة */
@@ -188,11 +198,12 @@
 
     <video id="webcam-video" autoplay playsinline muted></video>
 
+    <div id="distance-radar">البحث عن الحيز الجغرافي للذكريات...</div>
+
     <div id="ar-overlay-card">
         <p id="ar-text-view"></p>
         <div style="width: 80%; height: 1px; background: #d4a373; margin: 10px auto;"></div>
         <div id="ar-author-view" class="author"></div>
-        <div id="ar-distance-view" class="distance-tag">المسافة: جاري الحساب...</div>
     </div>
 
     <div class="controls-container">
@@ -251,7 +262,7 @@
         let selectedMarker = null;
         let selectedCoords = null;
         let currentMode = 'remote';
-        let watchId = null; // لمراقبة حركة المستخدم وتحديث الحجم حياً
+        let watchId = null;
 
         function startWebcam() {
             const video = document.getElementById('webcam-video');
@@ -350,43 +361,43 @@
             document.getElementById('manual-coords-input').value = "";
         }
 
-        // دالة حساب المسافة الدقيقة بين نقطتين جغرافيين (معادلة هافرسين الجغرافية)
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371000; // نصف قطر الأرض بالمتر
+            const R = 6371000; // بالمتر
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
                       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
                       Math.sin(dLon/2) * Math.sin(dLon/2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c; // المسافة بالمتر
+            return R * c;
         }
 
-        // دالة مراقبة المسافة وتعديل حجم اللوحة ديناميكياً
         function trackDistanceToMemory(targetLat, targetLng) {
             if (watchId) navigator.geolocation.clearWatch(watchId);
+
+            const radar = document.getElementById('distance-radar');
+            const card = document.getElementById('ar-overlay-card');
+            radar.style.display = 'block';
 
             watchId = navigator.geolocation.watchPosition(function(position) {
                 const currentLat = position.coords.latitude;
                 const currentLng = position.coords.longitude;
 
-                // حساب المسافة الحالية بالمتر
                 const distance = calculateDistance(currentLat, currentLng, targetLat, targetLng);
-                document.getElementById('ar-distance-view').innerText = `المسافة الحالية: ${distance.toFixed(1)} متر`;
+                
+                // تحديث الرادار العلوي للمستخدم ليقترب تدريجياً
+                radar.innerText = `البُعد عن الذاكرة: ${distance.toFixed(1)} متر`;
 
-                // تطبيق لوغاريتم التكبير والتصغير ديناميكياً بناءً على القرب والبعد
-                // النطاق المؤثر: من 0 متر إلى 100 متر
-                let scaleFactor = 1;
-                if (distance > 100) {
-                    scaleFactor = 0.2; // تصبح صغيرة جداً إذا كان بعيداً جداً
+                // شرط صارم: لا تظهر اللوحة على الكاميرا إلا إذا كانت المسافة متر واحد أو أقل
+                if (distance <= 1.0) {
+                    card.style.display = 'block';
+                    card.style.opacity = '1';
+                    card.style.transform = `translate(-50%, -50%) scale(1.1)`;
                 } else {
-                    // كلما قلّت المسافة من 100 إلى 0، يكبر حجم الحجم من 0.2 إلى 1.3
-                    scaleFactor = 1.3 - (distance / 100);
-                    if (scaleFactor < 0.2) scaleFactor = 0.2;
+                    // تختفي تماماً وبنعومة إذا ابتعد أكثر من 1 متر
+                    card.style.opacity = '0';
+                    setTimeout(() => { if(distance > 1.0) card.style.display = 'none'; }, 300);
                 }
-
-                // تطبيق التعديل على الكارت الحجمي فورا
-                document.getElementById('ar-overlay-card').style.transform = `translate(-50%, -50%) scale(${scaleFactor})`;
 
             }, function(err) {
                 console.log("خطأ في تتبع المسافة الحية.");
@@ -406,12 +417,11 @@
 
             document.getElementById('ar-text-view').innerText = thought;
             document.getElementById('ar-author-view').innerText = 'بقلم: ' + name;
-            document.getElementById('ar-overlay-card').style.display = 'block';
 
-            // البدء في تتبع حركة الهاتف وتعديل حجم لوحة البوح حياً بناءً على الإحداثيات المغروزة
+            // بدء التتبع الذكي في الخلفية
             trackDistanceToMemory(selectedCoords.lat, selectedCoords.lng);
 
-            alert("تم الغرز بنجاح! اللوحة ستكبر وتصغر الآن ديناميكياً حسب اقترابك أو ابتعادك عن النقطة جغرافياً.");
+            alert("تم الغرز السري بنجاح! الخاطرة مخفية الآن، ولن تظهر لأي أحد على الكاميرا إلا إذا اقترب مسافة 1 متر بالضبط من هذه النقطة.");
             closePlantPanel();
         }
     </script>
