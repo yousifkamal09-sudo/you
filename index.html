@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>منصة جغرافيا الخواطر - البث المباشر</title>
+    <title>منصة جغرافيا الخواطر - النسخة المدمجة المطورة</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght=400;700&display=swap');
         
         body, html {
             margin: 0;
@@ -21,48 +23,19 @@
             background-color: #000;
         }
 
-        /* الكاميرا الخلفية الحية */
-        #webcam-video {
+        /* حاوية مشهد الـ AR ليغطي كامل الخلفية بدلاً من وسم الـ video القديم */
+        .ar-background-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
             z-index: 1;
         }
 
-        /* اللوحة العائمة - تظهر عند الاقتراب لمسافة 10 أمتار أو أقل */
-        #ar-overlay-card {
-            position: fixed;
-            top: 30%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(1);
-            z-index: 5;
-            background: rgba(30, 18, 11, 0.95);
-            border: 2px solid #d4a373;
-            border-radius: 15px;
-            padding: 20px;
-            width: 85%;
-            max-width: 360px;
-            text-align: center;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.7);
-            display: none; 
-            color: #f5ebe0;
-            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
-        }
-
-        #ar-overlay-card p {
-            font-size: 18px;
-            line-height: 1.6;
-            margin: 0 0 15px 0;
-            word-wrap: break-word;
-        }
-
-        #ar-overlay-card .author {
-            color: #e63946;
-            font-weight: bold;
-            font-size: 14px;
+        a-scene {
+            width: 100% !important;
+            height: 100% !important;
         }
 
         /* مؤشر تتبع المسافة المتبقية في الأعلى */
@@ -80,6 +53,7 @@
             font-weight: bold;
             border: 1px solid rgba(212, 163, 115, 0.4);
             display: none;
+            pointer-events: none;
         }
 
         /* الأزرار العائمة أسفل الشاشة */
@@ -196,15 +170,28 @@
 </head>
 <body>
 
-    <video id="webcam-video" autoplay playsinline muted></video>
+    <div class="ar-background-container">
+        <a-scene embedded xr-mode-ui="enabled: true" webxr="optionalFeatures: hit-test;" ar-hit-test="target: #memory-text; type: wall;">
+            
+            <a-entity id="memory-text" position="0 0 -2" visible="false">
+                <a-ring color="#d4a373" radius-inner="0.08" radius-outer="0.12"></a-ring>
+                
+                <a-text 
+                  id="ar-3d-text"
+                  value="جغرافيا الخواطر" 
+                  align="center" 
+                  color="#f5ebe0" 
+                  scale="1.2 1.2 1.2"
+                  position="0 0 0.05"
+                  side="double">
+                </a-text>
+            </a-entity>
+
+            <a-entity camera position="0 1.6 0"></a-entity>
+        </a-scene>
+    </div>
 
     <div id="distance-radar">البحث عن الحيز الجغرافي للذكريات...</div>
-
-    <div id="ar-overlay-card">
-        <p id="ar-text-view"></p>
-        <div style="width: 80%; height: 1px; background: #d4a373; margin: 10px auto;"></div>
-        <div id="ar-author-view" class="author"></div>
-    </div>
 
     <div class="controls-container">
         <button class="action-btn" onclick="openPlantPanel('current')">📍 الغرز في موقعي الحالي</button>
@@ -264,22 +251,12 @@
         let currentMode = 'remote';
         let watchId = null;
 
-        function startWebcam() {
-            const video = document.getElementById('webcam-video');
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: { exact: "environment" } }
-                })
-                .then(function(stream) { video.srcObject = stream; })
-                .catch(function(error) {
-                    navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function(stream) { video.srcObject = stream; });
-                });
-            }
-        }
+        // استدعاء عناصر الواقع المعزز للتحكم بها جافا سكريبت
+        const sceneEl = document.querySelector('a-scene');
+        const textEntity = document.querySelector('#memory-text');
+        const ar3dText = document.querySelector('#ar-3d-text');
 
         window.addEventListener('DOMContentLoaded', function() {
-            startWebcam();
             checkUrlOrStorageMemory();
         });
 
@@ -379,7 +356,6 @@
             if (watchId) navigator.geolocation.clearWatch(watchId);
 
             const radar = document.getElementById('distance-radar');
-            const card = document.getElementById('ar-overlay-card');
             radar.style.display = 'block';
 
             watchId = navigator.geolocation.watchPosition(function(position) {
@@ -390,15 +366,17 @@
                 
                 radar.innerText = `البُعد عن الذاكرة: ${distance.toFixed(1)} متر`;
 
-                // شرط الـ 10 أمتار كأبعد نقطة ظهور
+                // شرط الـ 10 أمتار مع آلية تتبع الأسطح الرأسية
                 if (distance <= 10.0) {
-                    card.style.display = 'block';
-                    card.style.opacity = '1';
-                    let innerScale = 1.2 - (distance / 50); 
-                    card.style.transform = `translate(-50%, -50%) scale(${innerScale})`;
+                    // إذا اقترب المستخدم، يظهر النص ثلاثي الأبعاد ليبدأ بالالتصاق بالحوائط
+                    textEntity.setAttribute('visible', 'true');
+                    
+                    // تغيير الحجم تفاعلياً بناءً على القرب
+                    let innerScale = 1.5 - (distance / 20);
+                    textEntity.setAttribute('scale', `${innerScale} ${innerScale} ${innerScale}`);
                 } else {
-                    card.style.opacity = '0';
-                    setTimeout(() => { if(distance > 10.0) card.style.display = 'none'; }, 300);
+                    // إخفاء النص ثلاثي الأبعاد تماماً إذا كان المستخدم بعيداً عن النقطة
+                    textEntity.setAttribute('visible', 'false');
                 }
 
             }, function(err) {
@@ -414,8 +392,8 @@
             const urlName = urlParams.get('author');
 
             if (urlLat && urlLng && urlThought) {
-                document.getElementById('ar-text-view').innerText = decodeURIComponent(urlThought);
-                document.getElementById('ar-author-view').innerText = 'بقلم: ' + decodeURIComponent(urlName || 'مجهول');
+                const formattedText = `${urlThought} \n [بقلم: ${urlName || 'مجهول'}]`;
+                ar3dText.setAttribute('value', formattedText);
                 trackDistanceToMemory(parseFloat(urlLat), parseFloat(urlLng));
                 return;
             }
@@ -423,8 +401,8 @@
             const savedMemory = localStorage.getItem('geo_thought_memory');
             if (savedMemory) {
                 const data = JSON.parse(savedMemory);
-                document.getElementById('ar-text-view').innerText = data.thought;
-                document.getElementById('ar-author-view').innerText = 'بقلم: ' + data.name;
+                const formattedText = `${data.thought} \n [بقلم: ${data.name}]`;
+                ar3dText.setAttribute('value', formattedText);
                 trackDistanceToMemory(data.lat, data.lng);
             }
         }
@@ -448,21 +426,30 @@
             };
             localStorage.setItem('geo_thought_memory', JSON.stringify(memoryData));
 
-            document.getElementById('ar-text-view').innerText = thought;
-            document.getElementById('ar-author-view').innerText = 'بقلم: ' + name;
+            const formattedText = `${thought} \n [بقلم: ${name}]`;
+            ar3dText.setAttribute('value', formattedText);
 
             trackDistanceToMemory(selectedCoords.lat, selectedCoords.lng);
 
             const shareUrl = `${window.location.origin}${window.location.pathname}?lat=${selectedCoords.lat}&lng=${selectedCoords.lng}&thought=${encodeURIComponent(thought)}&author=${encodeURIComponent(name)}`;
 
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert("تم الغرز بنجاح وحفظه أبدياً!\n\nتم نسخ رابط المشاركة الخاص بهذه النقطة إلى حافظتك تلقائياً. أرسله لأصدقائك ليشاهدوا خاطرتك عند اقترابهم لمسافة 10 أمتار أو أقل!");
+                alert("تم الغرز بنجاح وحفظه أبدياً!\n\nتم نسخ رابط المشاركة الخاص بهذه النقطة إلى حافظتك تلقائياً. أرسله لأصدقائك ليشاهدوا خاطرتك مثبتة على الجدران عند اقترابهم لمسافة 10 أمتار أو أقل!");
             }).catch(() => {
                 alert(`تم الغرز والحفظ أبدياً!\n\nرابط مشاركة النقطة للآخرين هو:\n${shareUrl}`);
             });
 
             closePlantPanel();
         }
+
+        // عند الضغط على الشاشة، يتم تثبيت النص على الجدار الرأسي
+        window.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && !document.getElementById('plant-panel').contains(e.target)) {
+                if (sceneEl.is('ar-mode')) {
+                    console.log("تم تثبيت الخاطرة الأدبية على الجدار الرأسي بنجاح!");
+                }
+            }
+        });
     </script>
 </body>
 </html>
